@@ -5,8 +5,6 @@ import { MMKV } from 'react-native-mmkv';
 import { BarChart } from 'react-native-chart-kit';
 
 const screenWidth = Dimensions.get('window').width;
-
-// Initialize MMKV storage
 const storage = new MMKV();
 
 // Benchmark functions for AsyncStorage
@@ -49,25 +47,28 @@ const runBenchmark = async (size) => {
   const mmkvWriteTime = mmkvWrite('mmkvKey', data);
   const mmkvReadResult = mmkvRead('mmkvKey');
 
-  const asyncAvg = (asyncWriteTime + asyncReadResult.time) / 2;
-  const mmkvAvg = (mmkvWriteTime + mmkvReadResult.time) / 2;
-
-  // Calculate differences between AsyncStorage and MMKV for read and write
   const writeDifference = Math.abs(asyncWriteTime - mmkvWriteTime);
   const readDifference = Math.abs(asyncReadResult.time - mmkvReadResult.time);
 
-  console.log("AsyncStorage Read: ", asyncReadResult.time, "MMKV Read: ", mmkvReadResult.time);
-  console.log("AsyncStorage Write: ", asyncWriteTime, "MMKV Write: ", mmkvWriteTime);
+  // Calculate percentage differences
+  const writePercentageDifference = asyncWriteTime < mmkvWriteTime 
+    ? (writeDifference / asyncWriteTime) * 100 
+    : (writeDifference / mmkvWriteTime) * 100;
+
+  const readPercentageDifference = asyncReadResult.time < mmkvReadResult.time 
+    ? (readDifference / asyncReadResult.time) * 100 
+    : (readDifference / mmkvReadResult.time) * 100;
+
   return {
     size,
     asyncWriteTime,
     asyncReadTime: asyncReadResult.time,
-    asyncAvg,
     mmkvWriteTime,
     mmkvReadTime: mmkvReadResult.time,
-    mmkvAvg,
     writeDifference,
     readDifference,
+    writePercentageDifference,
+    readPercentageDifference,
   };
 };
 
@@ -86,7 +87,7 @@ const App = () => {
       <View style={styles.buttonContainer}>
         <Button title="Small Test" onPress={() => handleRunTests(10)} />
         <Button title="Medium Test" onPress={() => handleRunTests(1000)} />
-        <Button title="Large Test" onPress={() => handleRunTests(100000)} />
+        <Button title="Large Test" onPress={() => handleRunTests(10000)} />
       </View>
 
       {results.length > 0 && results.map((result, index) => (
@@ -103,24 +104,40 @@ const App = () => {
             chartConfig={chartConfig}
             style={styles.chartStyle}
           />
-          <View style={styles.summaryContainer}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Async Avg:</Text>
-              <Text style={styles.summaryValue}>{result.asyncAvg.toFixed(2)} ms</Text>
+          <View style={styles.comparisonContainer}>
+            <View style={styles.comparisonItem}>
+              <Text style={styles.comparisonLabel}>Async Write:</Text>
+              <Text style={styles.comparisonValue}>{result.asyncWriteTime.toFixed(2)} ms</Text>
             </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>MMKV Avg:</Text>
-              <Text style={styles.summaryValue}>{result.mmkvAvg.toFixed(2)} ms</Text>
+            <View style={styles.comparisonItem}>
+              <Text style={styles.comparisonLabel}>MMKV Write:</Text>
+              <Text style={styles.comparisonValue}>{result.mmkvWriteTime.toFixed(2)} ms</Text>
             </View>
-          </View>
-          <View style={styles.differenceContainer}>
-            <View style={styles.differenceItem}>
-              <Text style={styles.differenceLabel}>Write Diff (Async vs MMKV):</Text>
+            <View style={styles.comparisonItem}>
+              <Text style={styles.differenceLabel}>Write Diff:</Text>
               <Text style={styles.differenceValue}>{result.writeDifference.toFixed(2)} ms</Text>
             </View>
-            <View style={styles.differenceItem}>
-              <Text style={styles.differenceLabel}>Read Diff (Async vs MMKV):</Text>
+            <View style={styles.comparisonItem}>
+              <Text style={styles.differenceLabel}>Write Diff %:</Text>
+              <Text style={styles.differenceValue}>{result.writePercentageDifference.toFixed(2)}%</Text>
+            </View>
+          </View>
+          <View style={styles.comparisonContainer}>
+            <View style={styles.comparisonItem}>
+              <Text style={styles.comparisonLabel}>Async Read:</Text>
+              <Text style={styles.comparisonValue}>{result.asyncReadTime.toFixed(2)} ms</Text>
+            </View>
+            <View style={styles.comparisonItem}>
+              <Text style={styles.comparisonLabel}>MMKV Read:</Text>
+              <Text style={styles.comparisonValue}>{result.mmkvReadTime.toFixed(2)} ms</Text>
+            </View>
+            <View style={styles.comparisonItem}>
+              <Text style={styles.differenceLabel}>Read Diff:</Text>
               <Text style={styles.differenceValue}>{result.readDifference.toFixed(2)} ms</Text>
+            </View>
+            <View style={styles.comparisonItem}>
+              <Text style={styles.differenceLabel}>Read Diff %:</Text>
+              <Text style={styles.differenceValue}>{result.readPercentageDifference.toFixed(2)}%</Text>
             </View>
           </View>
         </View>
@@ -169,32 +186,26 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginVertical: 10,
   },
-  summaryContainer: {
+  comparisonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
+    paddingVertical: 5,
+    borderTopWidth: 1,
+    borderColor: '#ddd',
   },
-  summaryItem: {
+  comparisonItem: {
     flex: 1,
     alignItems: 'center',
   },
-  summaryLabel: {
+  comparisonLabel: {
     fontSize: 14,
     color: '#666',
   },
-  summaryValue: {
+  comparisonValue: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#222',
-  },
-  differenceContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-  differenceItem: {
-    flex: 1,
-    alignItems: 'center',
   },
   differenceLabel: {
     fontSize: 14,
@@ -221,4 +232,3 @@ const chartConfig = {
 };
 
 export default App;
-
