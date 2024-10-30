@@ -83,7 +83,7 @@ const App = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.header}>Storage Benchmark</Text>
-
+      
       <View style={styles.buttonContainer}>
         <Button title="Small Test" onPress={() => handleRunTests(10)} />
         <Button title="Medium Test" onPress={() => handleRunTests(1000)} />
